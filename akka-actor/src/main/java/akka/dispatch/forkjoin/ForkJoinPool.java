@@ -1331,7 +1331,7 @@ public class ForkJoinPool extends AbstractExecutorService {
      * If/when MWAIT-like intrinsics becomes available, they
      * may allow quieter spinning.
      */
-    private static final int SPINS  = 0;
+    private static final int SPINS  = Integer.getInteger("akka.dispatch.forkjoin.spins", 256);
 
     /**
      * Increment for seed generators. See class ThreadLocal for
