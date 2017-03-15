@@ -9,6 +9,7 @@ import org.openjdk.jmh.annotations._
 import scala.concurrent.duration._
 import java.util.concurrent.TimeUnit
 import scala.concurrent.Await
+import scala.annotation.tailrec
 
 @State(Scope.Benchmark)
 @BenchmarkMode(Array(Mode.Throughput))
@@ -19,10 +20,10 @@ import scala.concurrent.Await
 class ForkJoinActorBenchmark {
   import ForkJoinActorBenchmark._
 
-  @Param(Array("1", "5", "10"))
+  @Param(Array("5"))
   var tpt = 0
 
-  @Param(Array("1", "4"))
+  @Param(Array("1"))
   var threads = ""
 
   implicit var system: ActorSystem = _
@@ -83,7 +84,12 @@ class ForkJoinActorBenchmark {
         (ping, pong)
       }
 
-    pingPongs.foreach { case (ping, pong) => ping.tell(Message, pong) }
+    for {
+      (ping, pong) <- pingPongs
+      _ <- 1 to (2 * tpt)
+    } {
+      ping.tell(Message, pong)
+    }
 
     pingPongs.foreach {
       case (ping, pong) =>
@@ -108,7 +114,12 @@ class ForkJoinActorBenchmark {
         (ping, pong)
       }
 
-    pingPongs.foreach { case (ping, pong) => ping.tell(Message, pong) }
+    for {
+      (ping, pong) <- pingPongs
+      _ <- 1 to (2 * tpt)
+    } {
+      ping.tell(Message, pong)
+    }
 
     pingPongs.foreach {
       case (ping, pong) =>
@@ -133,7 +144,12 @@ class ForkJoinActorBenchmark {
         (ping, pong)
       }
 
-    pingPongs.foreach { case (ping, pong) => ping.tell(Message, pong) }
+    for {
+      (ping, pong) <- pingPongs
+      _ <- 1 to (2 * tpt)
+    } {
+      ping.tell(Message, pong)
+    }
 
     pingPongs.foreach {
       case (ping, pong) =>
@@ -145,9 +161,9 @@ class ForkJoinActorBenchmark {
     }
   }
 
-  @Benchmark
-  @Measurement(timeUnit = TimeUnit.MILLISECONDS)
-  @OperationsPerInvocation(messages)
+  //  @Benchmark
+  //  @Measurement(timeUnit = TimeUnit.MILLISECONDS)
+  //  @OperationsPerInvocation(messages)
   def floodPipe(): Unit = {
 
     val end = system.actorOf(Props(classOf[ForkJoinActorBenchmark.Pipe], None))
@@ -158,7 +174,7 @@ class ForkJoinActorBenchmark {
     val p = TestProbe()
     p.watch(end)
 
-    def send(left: Int): Unit =
+    @tailrec def send(left: Int): Unit =
       if (left > 0) {
         beginning ! Message
         send(left - 1)
